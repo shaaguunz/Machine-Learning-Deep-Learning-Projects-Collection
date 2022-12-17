@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% if pred ==2 %}
+<h2 style="padding:12%;background-color: chartreuse;color: black;">Your Text is Positive</h2>
+
+{% elif pred==0 %}
+<h2 style="padding:12%;background-color: red;color: black;">Your Text is Negative</h2>
+{% elif pred==1 %}
+<h2 style="padding:12%;background-color: yellow;color: black;">Your Text is Neutral</h2>
+
+{% endif %}
+
+<a class="btn-primary" style="margin-left:10%;border-radius: 10%; text-decoration: none; padding:10px;" href="{{url_for('home')}}">Back to Home</a>
+{% endblock content %}
+
