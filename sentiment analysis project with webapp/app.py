@@ -1,51 +1,29 @@
-from flask import Flask,render_template,request
-import numpy as np
-import pandas as pd
-import nltk
-import re
-from nltk.corpus import stopwords
+import streamlit as st
+from transformers import DistilBertTokenizer, DistilBertForSequenceClassification
+import torch
 
-from nltk.tokenize import word_tokenize
-import joblib
+# Load the model and tokenizer
+model_path = "./saved_model"
+tokenizer = DistilBertTokenizer.from_pretrained(model_path)
+model = DistilBertForSequenceClassification.from_pretrained(model_path)
 
-def preprocess(t):
-    text = str(text).lower()
-    text = re.sub(r"(@\[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)|^rt|http.+?", "", text)   #remove punctuation , numbers, links , synmbols
-    text = re.sub('\n', '', text) #replacing new line with ''
-    text = [word for word in text.split(' ') if word not in stopword]  #removing stop words
-    text=" ".join(text)  #joining text for lemmatization
-    text = [lemmatize.lemmatize(word) for word in text.split(' ')]  #lemmatizing words
-    text=" ".join(text) #again joining text for easy tokenization
-    
-    text=word_tokenize(text)
-    return text
+# Function to classify text
+def classify_text(text):
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=128)
+    with torch.no_grad():
+        outputs = model(**inputs)
+    logits = outputs.logits
+    predictions = torch.argmax(logits, dim=-1)
+    return predictions.item()
 
-cv = joblib.load('cv')
-model = joblib.load('model')
+# Streamlit app
+st.title("Text Classification with DistilBERT")
 
+text_input = st.text_area("Enter text to classify")
 
-app=Flask(__name__)
-
-@app.route('/')
-def home():
-    return render_template('home.html')
-
-@app.route('/predict',methods=['POST'])
-def predict():
-    if request.method=='POST':
-        message = request.form['text']
-        message = preprocess(message)
-
-        vect = cv.transform(message).toarray()
-        prediction = model.predict(vect)
-
-
-    return render_template('result.html',pred = prediction,msg=message)
-
-
-
-
-
-
-if __name__=='__main__':
-    app.run(debug=True)
+if st.button("Classify"):
+    if text_input:
+        prediction = classify_text(text_input)
+        st.write(f"Prediction: {prediction}")
+    else:
+        st.write("Please enter some text to classify.")
